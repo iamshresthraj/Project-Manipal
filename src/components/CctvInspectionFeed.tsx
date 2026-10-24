@@ -120,7 +120,7 @@ export const CctvInspectionFeed: React.FC<CctvInspectionFeedProps> = ({
   onOpenVisionModels,
   onToggleCpuMode,
 }) => {
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(false);
 
   // Active real-time notification state for high-confidence matches

@@ -449,6 +449,42 @@ export default function App() {
     });
   }, [avgCorridorSpeedKmh]);
 
+  // Tactical Corridor Action: Reroute Flow (shifts vehicles to alternate lanes)
+  const handleRerouteVehicles = useCallback(() => {
+    setVehicles((prev) =>
+      prev.map((v, i) =>
+        i % 2 === 0
+          ? {
+              ...v,
+              currentLane: (v.currentLane === -1 ? 1 : -1) as any,
+              currentPosition: [
+                v.currentPosition[0],
+                v.currentPosition[1],
+                (v.currentLane === -1 ? 1 : -1) * 2.4,
+              ],
+            }
+          : v
+      )
+    );
+  }, []);
+
+  // Tactical Corridor Action: Perturb / Test Lane Deviations
+  const handleTriggerDeviation = useCallback(() => {
+    setVehicles((prev) =>
+      prev.map((v) => {
+        const newVelocity = Math.max(3, Math.min(18, v.velocity + (Math.random() - 0.45) * 4));
+        return {
+          ...v,
+          velocity: newVelocity,
+          motionEmbedding: {
+            ...v.motionEmbedding,
+            speedKmh: Math.round(newVelocity * 3.6),
+          },
+        };
+      })
+    );
+  }, []);
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#f1f5f9] text-[#111827] select-none font-gilroy">
       {/* 3D WebGL Multi-Camera Corridor Scene (Three.js Full-Bleed Viewport) */}
@@ -497,6 +533,13 @@ export default function App() {
         }
         isCpuMode={visionConfig.isCpuLowPowerMode}
         onToggleCpuMode={handleToggleCpuMode}
+        vehicles={vehicles}
+        onSelectVehicle={(id) => {
+          setSelectedVehicleId(id);
+          setActiveCameraView("chase");
+        }}
+        onToggleBacklogCard={() => setShowBacklogCard((prev) => !prev)}
+        isBacklogCardVisible={showBacklogCard}
       />
 
       {/* Phase 2 Operational Resilience & Privacy Compliance Center */}
@@ -580,9 +623,9 @@ export default function App() {
         </div>
       )}
 
-      {/* Floating Center 3D Callout Card: Queue Backlog Advisory (Image 2 inspired) */}
+      {/* Floating 3D Callout Card: Queue Backlog Advisory (Docked non-intrusively beside zone card, not blocking center road) */}
       {viewMode === "corridor" && showBacklogCard && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-25 pointer-events-auto hidden lg:block">
+        <div className="absolute top-18 left-4 md:left-[364px] z-25 pointer-events-auto hidden md:block">
           <QueueBacklogCard
             congestionSpeedFactor={congestionSpeedFactor}
             selectedVehicle={selectedVehicle}
@@ -593,7 +636,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Unified Collapsible Bottom Control Dock (Bottom Center <= 15% Viewport) */}
+      {/* Unified Collapsible Bottom Control Deck (Bottom Center <= 15% Viewport) */}
       <ControlDock
         activeCameraView={activeCameraView}
         onSelectCameraView={setActiveCameraView}
@@ -627,6 +670,9 @@ export default function App() {
         activeDetector={visionConfig.activeDetector}
         isCpuMode={visionConfig.isCpuLowPowerMode}
         onToggleCpuMode={handleToggleCpuMode}
+        avgCorridorSpeedKmh={avgCorridorSpeedKmh}
+        onTriggerReroute={handleRerouteVehicles}
+        onTriggerDeviation={handleTriggerDeviation}
       />
 
       {/* Interactive Modals */}

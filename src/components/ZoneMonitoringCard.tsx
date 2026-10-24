@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -44,18 +44,42 @@ export const ZoneMonitoringCard: React.FC<ZoneMonitoringCardProps> = ({
     { time: "18:00", heightPct: 58 },
   ];
 
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [selectedHour, setSelectedHour] = useState<string | null>("14:00");
+
+  if (isCollapsed) {
+    return (
+      <button
+        onClick={() => setIsCollapsed(false)}
+        className="glass-panel-amber px-4 py-2 rounded-2xl flex items-center gap-2.5 text-xs font-bold text-[#1f2937] shadow-[0_8px_30px_rgba(217,119,6,0.15)] hover:bg-amber-100/60 transition-all cursor-pointer font-gilroy"
+      >
+        <span
+          className={`w-2.5 h-2.5 rounded-full ${
+            isCongested
+              ? "bg-[#ea580c] shadow-[0_0_8px_rgba(234,88,12,0.8)] animate-pulse"
+              : "bg-emerald-500"
+          }`}
+        />
+        <span>Zone Monitoring (Sec-4)</span>
+        <span className="text-[10px] text-[#6b7280] font-normal">· {isCongested ? "Congested" : "Normal"}</span>
+        <span className="text-[10px] bg-amber-200/80 px-1.5 py-0.5 rounded text-amber-900 font-semibold ml-1">Expand</span>
+      </button>
+    );
+  }
+
   return (
     <div className="w-80 sm:w-88 glass-panel-amber rounded-3xl p-5 shadow-[0_24px_60px_rgba(217,119,6,0.12)] text-[#1f2937] font-gilroy select-none space-y-4 transition-all">
-      {/* Header: Zone Monitoring + Top Right Arrow */}
+      {/* Header: Zone Monitoring + Minimize Toggle */}
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-bold tracking-tight text-[#374151] uppercase font-gilroy">
           Zone Monitoring
         </h3>
         <button
-          className="text-[#9ca3af] hover:text-[#111827] transition-colors cursor-pointer"
-          title="Open Zone Details"
+          onClick={() => setIsCollapsed(true)}
+          className="text-xs font-semibold text-[#6b7280] hover:text-[#111827] px-2 py-0.5 rounded-lg hover:bg-amber-200/40 transition-colors cursor-pointer"
+          title="Minimize Zone Monitoring card"
         >
-          <ArrowUpRight className="w-4 h-4" />
+          Minimize
         </button>
       </div>
 

@@ -121,8 +121,8 @@ export const ThreeCorridorScene: React.FC<ThreeCorridorSceneProps> = ({
       0.5,
       350
     );
-    camera.position.set(0, 42, 60);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(-15, 48, 50);
+    camera.lookAt(8, 0, -2);
     cameraRef.current = camera;
 
     // Renderer setup
@@ -582,9 +582,9 @@ export const ThreeCorridorScene: React.FC<ThreeCorridorSceneProps> = ({
         lookTarget.set(0, 0, 0);
       }
     } else {
-      // "overview"
-      targetPos.set(0, 38, 55);
-      lookTarget.set(0, 0, 0);
+      // "overview" - Elevated bird's-eye isometric perspective with clear road visibility
+      targetPos.set(-15, 48, 50);
+      lookTarget.set(8, 0, -2);
     }
 
     const lambda = 4.5;
@@ -975,42 +975,41 @@ function buildProceduralCity(scene: THREE.Scene) {
     roughness: 0.8,
   });
 
-  // North Side City Blocks (z < -14)
+  // North Side Skyline Blocks (z < -22, safely behind the road corridor)
   const northBuildings = [
-    { x: -65, z: -28, w: 14, d: 16, h: 22 },
-    { x: -48, z: -32, w: 16, d: 18, h: 32 },
-    { x: -28, z: -26, w: 18, d: 14, h: 18 },
-    { x: -8, z: -35, w: 16, d: 20, h: 38 },
-    { x: 12, z: -28, w: 18, d: 16, h: 24 },
-    { x: 34, z: -34, w: 15, d: 18, h: 30 },
-    { x: 54, z: -28, w: 18, d: 16, h: 20 },
-    { x: 74, z: -32, w: 14, d: 18, h: 26 },
+    { x: -65, z: -30, w: 14, d: 16, h: 22 },
+    { x: -48, z: -34, w: 16, d: 18, h: 32 },
+    { x: -28, z: -28, w: 18, d: 14, h: 18 },
+    { x: -8, z: -36, w: 16, d: 20, h: 36 },
+    { x: 12, z: -30, w: 18, d: 16, h: 24 },
+    { x: 34, z: -35, w: 15, d: 18, h: 30 },
+    { x: 54, z: -30, w: 18, d: 16, h: 20 },
+    { x: 74, z: -34, w: 14, d: 18, h: 26 },
 
-    // Outer row
-    { x: -55, z: -52, w: 18, d: 16, h: 42 },
-    { x: -25, z: -50, w: 22, d: 18, h: 28 },
-    { x: 8, z: -54, w: 20, d: 20, h: 48 },
-    { x: 42, z: -52, w: 22, d: 18, h: 36 },
+    // Outer North row
+    { x: -55, z: -55, w: 18, d: 16, h: 42 },
+    { x: -25, z: -52, w: 22, d: 18, h: 28 },
+    { x: 8, z: -56, w: 20, d: 20, h: 46 },
+    { x: 42, z: -54, w: 22, d: 18, h: 36 },
+
+    // Far East & West Flank Blocks (Outside roadway corridor x in [-70, 70])
+    { x: -84, z: 12, w: 16, d: 22, h: 24 },
+    { x: 84, z: 12, w: 16, d: 22, h: 24 },
+    { x: -84, z: 36, w: 18, d: 20, h: 30 },
+    { x: 84, z: 36, w: 18, d: 20, h: 30 },
   ];
 
-  // South Side City Blocks (z > 14)
-  const southBuildings = [
-    { x: -60, z: 28, w: 16, d: 14, h: 20 },
-    { x: -40, z: 32, w: 18, d: 16, h: 28 },
-    { x: -18, z: 26, w: 16, d: 14, h: 16 },
-    { x: 4, z: 34, w: 18, d: 18, h: 34 },
-    { x: 26, z: 28, w: 16, d: 15, h: 22 },
-    { x: 48, z: 32, w: 18, d: 18, h: 28 },
-    { x: 68, z: 26, w: 14, d: 14, h: 18 },
-
-    // Outer row
-    { x: -48, z: 52, w: 20, d: 18, h: 38 },
-    { x: -10, z: 50, w: 22, d: 16, h: 30 },
-    { x: 24, z: 54, w: 20, d: 20, h: 44 },
-    { x: 58, z: 50, w: 18, d: 18, h: 32 },
+  // Foreground (South side, z in [12, 45]):
+  // ZERO tall buildings here to ensure 100% unobstructed visibility of road, vehicles & trajectories.
+  // Instead: low architectural terraces, pedestrian promenade decks (height 0.4 - 1.2m)
+  const southPlazas = [
+    { x: -50, z: 20, w: 24, d: 14, h: 0.6 },
+    { x: -20, z: 22, w: 26, d: 16, h: 0.8 },
+    { x: 15, z: 20, w: 30, d: 14, h: 0.6 },
+    { x: 52, z: 22, w: 28, d: 16, h: 0.8 },
   ];
 
-  [...northBuildings, ...southBuildings].forEach((b, idx) => {
+  northBuildings.forEach((b, idx) => {
     // Main building volume
     const geo = new THREE.BoxGeometry(b.w, b.h, b.d);
     const mesh = new THREE.Mesh(geo, idx % 2 === 0 ? buildingMat : buildingAccentMat);
@@ -1027,6 +1026,14 @@ function buildProceduralCity(scene: THREE.Scene) {
       roofBox.castShadow = true;
       scene.add(roofBox);
     }
+  });
+
+  southPlazas.forEach((p) => {
+    const geo = new THREE.BoxGeometry(p.w, p.h, p.d);
+    const mesh = new THREE.Mesh(geo, buildingAccentMat);
+    mesh.position.set(p.x, p.h / 2, p.z);
+    mesh.receiveShadow = true;
+    scene.add(mesh);
   });
 
   // Green Courtyard / Park Patches

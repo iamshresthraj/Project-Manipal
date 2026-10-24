@@ -57,6 +57,10 @@ interface AuthAndSaveBarProps {
   onToggleCpuMode?: () => void;
   onOpenAiReasoner?: () => void;
   isAiLoading?: boolean;
+  vehicles?: any[];
+  onSelectVehicle?: (id: string) => void;
+  onToggleBacklogCard?: () => void;
+  isBacklogCardVisible?: boolean;
 }
 
 export const AuthAndSaveBar: React.FC<AuthAndSaveBarProps> = ({
@@ -76,13 +80,29 @@ export const AuthAndSaveBar: React.FC<AuthAndSaveBarProps> = ({
   onToggleCpuMode,
   onOpenAiReasoner,
   isAiLoading = false,
+  vehicles = [],
+  onSelectVehicle,
+  onToggleBacklogCard,
+  isBacklogCardVisible = true,
 }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [showDomainNotice, setShowDomainNotice] = useState(false);
   const [copiedHostname, setCopiedHostname] = useState(false);
   const [currentTimeStr, setCurrentTimeStr] = useState("Mon 8 Dec · 18:21");
+
+  const filteredVehicles = searchQuery.trim()
+    ? vehicles.filter(
+        (v) =>
+          v.globalId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          v.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          v.type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          v.colorClass?.toLowerCase().includes(searchQuery.toLowerCase())
+      ).slice(0, 8)
+    : [];
 
   useEffect(() => {
     const updateTime = () => {
@@ -264,13 +284,109 @@ export const AuthAndSaveBar: React.FC<AuthAndSaveBarProps> = ({
           </nav>
         )}
 
-        {/* Top-Right: Traffic 12 Badge + Notifications + User Profile */}
+        {/* Top-Right: Search Input + Save/History Tools + Traffic 12 Badge + Notifications + User Profile */}
         <div className="flex items-center gap-2 pointer-events-auto">
-          {/* Traffic 12 Yellow Badge */}
-          <div className="bg-[#fef08a] border border-amber-200 text-amber-950 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-xs">
+          {/* Live Search Input with Dropdown (Sector / Vehicle ID) */}
+          <div className="relative">
+            <div className="glass-pill-light px-3 py-1.5 rounded-2xl flex items-center gap-2 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+              <Search className="w-3.5 h-3.5 text-[#9ca3af]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsSearchOpen(true);
+                }}
+                onFocus={() => setIsSearchOpen(true)}
+                placeholder="Search vehicle / type..."
+                className="bg-transparent text-xs text-[#111827] placeholder-[#9ca3af] outline-none w-28 sm:w-36 font-gilroy"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setIsSearchOpen(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            {/* Live Search Autocomplete Dropdown */}
+            {isSearchOpen && searchQuery.trim().length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white/95 backdrop-blur-xl border border-gray-200/80 rounded-2xl shadow-2xl p-2 z-50 max-h-56 overflow-y-auto space-y-1">
+                {filteredVehicles.length > 0 ? (
+                  filteredVehicles.map((v) => (
+                    <button
+                      key={v.id}
+                      onClick={() => {
+                        if (onSelectVehicle) onSelectVehicle(v.id);
+                        setSearchQuery(v.globalId);
+                        setIsSearchOpen(false);
+                      }}
+                      className="w-full text-left p-2 hover:bg-gray-100/80 rounded-xl flex items-center justify-between transition-colors cursor-pointer text-xs"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <span
+                          className="w-3 h-3 rounded-full border border-gray-300 shrink-0"
+                          style={{ backgroundColor: v.primaryColorHex || "#38bdf8" }}
+                        />
+                        <span className="font-bold text-[#111827] font-mono">{v.globalId}</span>
+                        <span className="text-[10px] text-[#6b7280] capitalize">({v.type.replace("_", " ")})</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-emerald-600 font-bold shrink-0">
+                        {v.velocity ? Math.round(v.velocity * 3.6) : (v.motionEmbedding?.speedKmh || 35)} km/h
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="p-2 text-center text-[11px] text-[#6b7280]">
+                    No vehicles matching "{searchQuery}"
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Save Study & Run History Quick Tools */}
+          <div className="glass-pill-light p-1 rounded-2xl flex items-center gap-0.5 shadow-[0_8px_30px_rgba(0,0,0,0.06)] text-[#6b7280]">
+            <button
+              onClick={onLoadSavedStudies}
+              className="w-8 h-8 rounded-xl hover:bg-gray-100/80 flex items-center justify-center text-[#4b5563] hover:text-[#111827] transition-all cursor-pointer"
+              title="Saved Studies & Runs"
+            >
+              <Clock className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={onSaveStudy}
+              disabled={isSaving}
+              className="w-8 h-8 rounded-xl hover:bg-gray-100/80 flex items-center justify-center text-[#4b5563] hover:text-[#111827] transition-all cursor-pointer"
+              title="Save Current Study"
+            >
+              {saveSuccess ? (
+                <Check className="w-4 h-4 text-emerald-600" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+
+          {/* Traffic 12 Yellow Badge (Clickable to toggle Queue Backlog Advisory) */}
+          <button
+            onClick={onToggleBacklogCard}
+            className={`border px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition-all ${
+              isBacklogCardVisible
+                ? "bg-[#fef08a] border-amber-300 text-amber-950 font-bold ring-2 ring-amber-400/50"
+                : "bg-white/80 hover:bg-[#fef08a] border-amber-200 text-amber-900 font-bold"
+            }`}
+            title="Toggle Queue Backlog Advisory"
+          >
             <span>Traffic</span>
             <span className="bg-amber-950/10 px-1.5 py-0.2 rounded text-[11px]">12</span>
-          </div>
+          </button>
 
           {/* Bell Icon with Red Alert Dot */}
           <button
@@ -329,42 +445,6 @@ export const AuthAndSaveBar: React.FC<AuthAndSaveBarProps> = ({
           </div>
         </div>
       </header>
-
-      {/* Secondary Floating Tools Pill (Top Right, right under profile) */}
-      <div className="fixed top-18 right-4 z-35 flex items-center gap-2 select-none pointer-events-auto">
-        <div className="glass-pill-light p-1 rounded-2xl flex items-center gap-1 shadow-[0_8px_30px_rgba(0,0,0,0.06)] text-[#6b7280]">
-          <button
-            onClick={onLoadSavedStudies}
-            className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-[#4b5563] hover:text-[#111827] transition-all cursor-pointer"
-            title="Saved Studies & Runs"
-          >
-            <Clock className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={onSaveStudy}
-            disabled={isSaving}
-            className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-[#4b5563] hover:text-[#111827] transition-all cursor-pointer"
-            title="Save Current Study"
-          >
-            {saveSuccess ? (
-              <Check className="w-4 h-4 text-emerald-600" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-          </button>
-        </div>
-
-        {/* Search Pill */}
-        <div className="glass-pill-light px-3 py-1.5 rounded-2xl flex items-center gap-2 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
-          <Search className="w-3.5 h-3.5 text-[#9ca3af]" />
-          <input
-            type="text"
-            placeholder="Search Sector / Vehicle..."
-            className="bg-transparent text-xs text-[#111827] placeholder-[#9ca3af] outline-none w-36 font-gilroy"
-          />
-        </div>
-      </div>
 
       {/* Operator Sign-in Modal */}
       {isSignInModalOpen && (

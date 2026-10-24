@@ -155,6 +155,23 @@ export const QueueBacklogCard: React.FC<QueueBacklogCardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Action Buttons: Functional Flow Mitigation & Telemetry Inspection */}
+      <div className="flex items-center gap-2 pt-1 border-t border-white/15">
+        <button
+          onClick={onMitigateCongestion}
+          className="flex-1 py-1.5 px-2 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-white/25 shadow-xs"
+        >
+          <span>Clear & Mitigate (1.5x)</span>
+        </button>
+
+        <button
+          onClick={onOpenLab}
+          className="py-1.5 px-3 bg-white/10 hover:bg-white/20 text-white/90 hover:text-white text-xs font-semibold rounded-xl transition-all cursor-pointer border border-white/15"
+        >
+          <span>Telemetry</span>
+        </button>
+      </div>
     </div>
   );
 };

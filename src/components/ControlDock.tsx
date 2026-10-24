@@ -40,6 +40,9 @@ interface ControlDockProps {
   activeDetector?: string;
   isCpuMode?: boolean;
   onToggleCpuMode?: () => void;
+  avgCorridorSpeedKmh?: number;
+  onTriggerReroute?: () => void;
+  onTriggerDeviation?: () => void;
 }
 
 export const ControlDock: React.FC<ControlDockProps> = ({
@@ -58,6 +61,9 @@ export const ControlDock: React.FC<ControlDockProps> = ({
   onResetSimulation,
   onOpenLab,
   onOpenVisionModels,
+  avgCorridorSpeedKmh = 38.4,
+  onTriggerReroute,
+  onTriggerDeviation,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTactical, setActiveTactical] = useState<string | null>(null);
@@ -88,43 +94,122 @@ export const ControlDock: React.FC<ControlDockProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Compute Traffic Load Percentage & Efficiency
+  // Compute Traffic Load Percentage & Dynamic Efficiency
   const trafficLoadPct = Math.min(
-    92,
-    Math.max(28, Math.round(100 - congestionSpeedFactor * 48))
+    95,
+    Math.max(24, Math.round(100 - congestionSpeedFactor * 46))
   );
-  const efficiencyPct = 46;
+  const efficiencyPct = Math.min(
+    98,
+    Math.max(28, Math.round((avgCorridorSpeedKmh / 50) * 58 + (congestionSpeedFactor / 1.5) * 35))
+  );
 
   // Tactical Controls handlers
   const handleTactical = (action: string) => {
     setActiveTactical(action);
     setTimeout(() => setActiveTactical(null), 1500);
 
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
     switch (action) {
       case "accelerate":
         onChangeSpeedFactor(1.8);
+        setEventLogs((prev) => [
+          {
+            id: Date.now(),
+            time: timeStr,
+            title: "Accelerate Engaged",
+            subtitle: "Corridor pace boosted to 1.8x",
+            iconType: "yellow",
+          },
+          ...prev.slice(0, 2),
+        ]);
         break;
       case "rerouting":
-        if (onOpenLab) onOpenLab();
+        if (onTriggerReroute) {
+          onTriggerReroute();
+        } else if (onOpenLab) {
+          onOpenLab();
+        }
+        setEventLogs((prev) => [
+          {
+            id: Date.now(),
+            time: timeStr,
+            title: "Corridor Flow Rerouted",
+            subtitle: "Diverted traffic to bypass lane",
+            iconType: "dark",
+          },
+          ...prev.slice(0, 2),
+        ]);
         break;
-      case "monitoring":
-        onSelectCameraView(
-          activeCameraView === "CAM_A"
-            ? "CAM_B"
-            : activeCameraView === "CAM_B"
-            ? "CAM_C"
-            : "CAM_A"
-        );
+      case "monitoring": {
+        const camOrder: ("overview" | "CAM_A" | "CAM_B" | "CAM_C" | "CAM_D" | "chase")[] = [
+          "overview",
+          "CAM_A",
+          "CAM_B",
+          "CAM_C",
+          "CAM_D",
+          "chase",
+        ];
+        const nextIdx = (camOrder.indexOf(activeCameraView) + 1) % camOrder.length;
+        const nextCam = camOrder[nextIdx];
+        onSelectCameraView(nextCam);
+        setEventLogs((prev) => [
+          {
+            id: Date.now(),
+            time: timeStr,
+            title: "Camera View Switched",
+            subtitle: `Active: ${nextCam.toUpperCase()}`,
+            iconType: "yellow",
+          },
+          ...prev.slice(0, 2),
+        ]);
         break;
+      }
       case "restriction":
         onChangeSpeedFactor(0.35);
+        setEventLogs((prev) => [
+          {
+            id: Date.now(),
+            time: timeStr,
+            title: "Speed Clamped",
+            subtitle: "Bottleneck restricted to 0.35x",
+            iconType: "orange",
+          },
+          ...prev.slice(0, 2),
+        ]);
         break;
       case "deviation":
-        if (onOpenLab) onOpenLab();
+        if (onTriggerDeviation) {
+          onTriggerDeviation();
+        } else if (onOpenLab) {
+          onOpenLab();
+        }
+        setEventLogs((prev) => [
+          {
+            id: Date.now(),
+            time: timeStr,
+            title: "Lane Deviation Test",
+            subtitle: "Vehicle trajectory perturbation",
+            iconType: "dark",
+          },
+          ...prev.slice(0, 2),
+        ]);
         break;
       case "deactivate":
         onResetSimulation();
         onChangeSpeedFactor(1.0);
+        setEventLogs((prev) => [
+          {
+            id: Date.now(),
+            time: timeStr,
+            title: "Normal Flow Restored",
+            subtitle: "Reset fleet & 1.0x baseline speed",
+            iconType: "yellow",
+          },
+          ...prev.slice(0, 2),
+        ]);
         break;
     }
   };
